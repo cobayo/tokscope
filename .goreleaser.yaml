@@ -1,0 +1,57 @@
+# GoReleaser v2. `git tag v0.1.0 && git push --tags` でリリースされます。
+# YOUR_GITHUB は自分の GitHub ユーザー名に置き換えてください。
+version: 2
+project_name: tokscope
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+
+# macOS: brew install YOUR_GITHUB/tap/tokscope
+# (brews: は v2.10 で非推奨になったため homebrew_casks を使います)
+homebrew_casks:
+  - name: tokscope
+    binaries: [tokscope]
+    homepage: https://github.com/YOUR_GITHUB/tokscope
+    description: Local proxy that records token usage of Claude Code, Codex and other AI CLIs
+    repository:
+      owner: YOUR_GITHUB
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    hooks:
+      post:
+        # 署名・公証していないバイナリのため quarantine 属性を外す
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/tokscope"]
+          end
+
+# Windows: scoop bucket add tokscope https://github.com/YOUR_GITHUB/scoop-bucket
+#          scoop install tokscope
+scoops:
+  - name: tokscope
+    homepage: https://github.com/YOUR_GITHUB/tokscope
+    description: Local proxy that records token usage of Claude Code, Codex and other AI CLIs
+    repository:
+      owner: YOUR_GITHUB
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"

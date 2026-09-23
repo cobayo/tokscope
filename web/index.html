@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tokscope</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='4' fill='%23A9BCCF'/%3E%3Crect x='1' y='3' width='6' height='4' fill='%232553A8'/%3E%3Crect x='1' y='10' width='5' height='3' fill='%23D8901A'/%3E%3C/svg%3E">
+<style>
+:root {
+  --paper: #F3F5F7;
+  --ink: #18202B;
+  --muted: #5D6B7C;
+  --rule: #D8DEE5;
+  --surface: #FFFFFF;
+  --track: #E4E9EE;
+  --cache-read: #A9BCCF;
+  --fresh: #2553A8;
+  --cache-write: #7B5BC4;
+  --output: #D8901A;
+  --warn: #B3261E;
+  --ok: #2E8B57;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #161C24;
+    --ink: #E6EAF0;
+    --muted: #93A1B3;
+    --rule: #2A3441;
+    --surface: #1C2430;
+    --track: #232C38;
+    --cache-read: #4E6479;
+    --fresh: #5B8DEF;
+    --cache-write: #A68BE8;
+    --output: #F0B23E;
+    --warn: #FF8A80;
+    --ok: #5CC98A;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Segoe UI", "Noto Sans JP", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+main { max-width: 880px; margin: 0 auto; padding: 28px 20px 72px; }
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono CJK JP", monospace; }
+
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.top h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.live { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); }
+.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.live.on::before { background: var(--ok); }
+
+.summary {
+  margin: 28px 0 0;
+  font-size: clamp(22px, 4.2vw, 30px);
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  max-width: 26em;
+  text-wrap: balance;
+}
+.summary .n-in, .summary .n-out { white-space: nowrap; }
+.summary .n-in { color: var(--fresh); }
+.summary .n-out { color: var(--output); }
+.sub { margin: 8px 0 0; color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 28px 0 10px; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.legend li { display: inline-flex; align-items: center; gap: 7px; }
+.legend li::before { content: ""; width: 12px; height: 8px; border-radius: 1px; background: var(--c); }
+
+.records { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--rule); }
+.rec { border-top: 1px solid var(--rule); }
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 20px;
+  padding: 14px 8px 16px;
+  margin: 0 -8px;
+  list-style: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.row::-webkit-details-marker { display: none; }
+.row:hover { background: var(--surface); }
+.row:focus-visible { outline: 2px solid var(--fresh); outline-offset: -2px; }
+details[open] > .row { background: var(--surface); border-radius: 4px 4px 0 0; }
+
+.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
+.time { color: var(--muted); font-size: 13px; }
+.client { font-weight: 600; }
+.model { color: var(--muted); overflow-wrap: anywhere; }
+.status { color: var(--warn); font-weight: 600; font-size: 13px; }
+.figs { text-align: right; white-space: nowrap; font-size: 14px; color: var(--muted); }
+.figs b { color: var(--ink); font-weight: 600; margin-left: 4px; }
+.figs .sep { display: inline-block; width: 14px; }
+
+.bars { grid-column: 1 / -1; display: grid; gap: 4px; }
+.bar { display: block; height: 10px; background: var(--track); border-radius: 2px; overflow: hidden; }
+.bar.out { height: 5px; }
+.fill { display: flex; gap: 1px; height: 100%; }
+.seg { flex: 1 1 0; min-width: 2px; }
+
+.cache-read { --c: var(--cache-read); }
+.fresh { --c: var(--fresh); }
+.cache-write { --c: var(--cache-write); }
+.output { --c: var(--output); }
+.seg { background: var(--c); }
+
+.prompt {
+  grid-column: 1 / -1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  vertical-align: 1px;
+}
+.muted { color: var(--muted); }
+
+.detail {
+  display: grid;
+  gap: 20px;
+  padding: 4px 8px 24px;
+  margin: 0 -8px;
+  background: var(--surface);
+  border-radius: 0 0 4px 4px;
+}
+.detail h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.detail pre {
+  margin: 0;
+  padding: 12px 14px;
+  max-height: 340px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.65;
+  background: var(--paper);
+  border-radius: 4px;
+}
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 20px; margin: 0; font-size: 14px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+
+button {
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible { outline: 2px solid var(--fresh); outline-offset: 2px; }
+
+.empty { padding: 28px 0; border-top: 1px solid var(--rule); color: var(--muted); max-width: 36em; }
+.empty p { margin: 0 0 8px; }
+.empty code { color: var(--ink); background: var(--surface); padding: 2px 6px; border-radius: 3px; }
+
+dialog {
+  width: min(920px, 94vw);
+  max-height: 86vh;
+  padding: 0;
+  overflow: auto;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+dialog::backdrop { background: rgb(10 14 20 / 0.45); }
+.dlg-head {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.dlg-head h2 { margin: 0; font-size: 15px; }
+#sysdlg-body { margin: 0; padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.7; }
+
+@keyframes arrive {
+  from { background: color-mix(in srgb, var(--output) 16%, transparent); }
+  to { background: transparent; }
+}
+.rec.arrived .row { animation: arrive 1.8s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .rec.arrived .row { animation: none; }
+}
+@media (max-width: 560px) {
+  main { padding: 20px 16px 56px; }
+  .row { grid-template-columns: minmax(0, 1fr); }
+  .figs { text-align: left; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <h1>tokscope</h1>
+    <span id="live" class="live">接続しています</span>
+  </header>
+
+  <p id="summary" class="summary">読み込んでいます</p>
+  <p id="sub" class="sub"></p>
+
+  <ul class="legend" aria-label="グラフの色の意味">
+    <li class="cache-read">キャッシュ読込</li>
+    <li class="fresh">新規入力</li>
+    <li class="cache-write">キャッシュ書込</li>
+    <li class="output">出力（下の細い線）</li>
+  </ul>
+
+  <p id="listcap" class="sub"></p>
+  <ol id="records" class="records" aria-label="最新のリクエスト"></ol>
+  <div id="empty" class="empty" hidden>
+    <p>まだ記録がありません。</p>
+    <p>ターミナルで <code>tokscope run -- claude</code> のように起動すると、リクエストが届くたびにここへ追加されます。</p>
+  </div>
+</main>
+
+<dialog id="sysdlg" aria-labelledby="sysdlg-title">
+  <div class="dlg-head">
+    <h2 id="sysdlg-title">システムプロンプト</h2>
+    <button id="sysdlg-close" type="button">閉じる</button>
+  </div>
+  <pre id="sysdlg-body"></pre>
+</dialog>
+
+<script>
+const nf = new Intl.NumberFormat('ja-JP');
+const cfmt = new Intl.NumberFormat('ja-JP', { notation: 'compact', maximumFractionDigits: 1 });
+const compact = (n) => (n < 10000 ? nf.format(n) : cfmt.format(n));
+const openIds = new Set();
+let seenIds = null;
+
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'style') e.style.cssText = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid === undefined || kid === null || kid === false) continue;
+    e.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+  return e;
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  const t = d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  return d.toDateString() === new Date().toDateString() ? t : `${d.getMonth() + 1}/${d.getDate()} ${t}`;
+}
+const fmtDur = (ms) => (ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} 秒`);
+const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
+
+function renderSummary(t) {
+  const s = document.getElementById('summary');
+  const sub = document.getElementById('sub');
+  if (!t || !t.requests) {
+    s.textContent = '今日はまだリクエストがありません。';
+    sub.textContent = '';
+    return;
+  }
+  s.replaceChildren(
+    `本日はこれまでに ${nf.format(t.requests)} 件のリクエスト。入力 `,
+    el('span', { class: 'n-in', title: `${nf.format(t.total_input_tokens)} トークン` }, `${compact(t.total_input_tokens)} トークン`),
+    '、出力 ',
+    el('span', { class: 'n-out', title: `${nf.format(t.output_tokens)} トークン` }, `${compact(t.output_tokens)} トークン`),
+    '。'
+  );
+  sub.textContent = t.total_input_tokens
+    ? `入力のうち ${pct(t.cache_read_tokens, t.total_input_tokens)}% はキャッシュからの読み込みでした。`
+    : '';
+}
+
+function bar(kind, max, parts, label) {
+  const total = parts.reduce((a, p) => a + p.v, 0);
+  const width = total > 0 ? Math.max(0.8, (total / max) * 100) : 0;
+  const fill = el('span', { class: 'fill', style: `width:${width}%` });
+  for (const p of parts) {
+    if (p.v > 0) fill.append(el('span', { class: `seg ${p.k}`, style: `flex-grow:${p.v}` }));
+  }
+  return el('span', { class: `bar ${kind}`, role: 'img', 'aria-label': label }, fill);
+}
+
+function row(r, maxIn, maxOut, arrived) {
+  const ok = r.status >= 200 && r.status < 300 && !r.error;
+  const meta = el('span', { class: 'meta' },
+    el('time', { class: 'time', datetime: r.ts }, fmtTime(r.ts)),
+    el('span', { class: 'client' }, r.client || '不明'),
+    el('span', { class: 'model' }, r.model || 'モデル不明'),
+    ok ? null : el('span', { class: 'status' }, r.status >= 300 ? `HTTP ${r.status}` : '中断')
+  );
+  const figs = r.usage_found
+    ? el('span', { class: 'figs' }, '入力', el('b', {}, nf.format(r.total_input_tokens)), el('span', { class: 'sep' }), '出力', el('b', {}, nf.format(r.output_tokens)))
+    : el('span', { class: 'figs' }, '使用量なし');
+  const bars = !r.usage_found ? null : el('span', { class: 'bars' },
+    bar('in', maxIn, [
+      { k: 'cache-read', v: r.cache_read_tokens },
+      { k: 'fresh', v: r.input_tokens },
+      { k: 'cache-write', v: r.cache_write_tokens },
+    ], `入力 ${nf.format(r.total_input_tokens)} トークン。キャッシュ読込 ${nf.format(r.cache_read_tokens)}、新規入力 ${nf.format(r.input_tokens)}、キャッシュ書込 ${nf.format(r.cache_write_tokens)}`),
+    bar('out', maxOut, [{ k: 'output', v: r.output_tokens }], `出力 ${nf.format(r.output_tokens)} トークン`)
+  );
+  const prompt = el('span', { class: 'prompt' },
+    r.prompt_kind === 'tool_result' ? el('span', { class: 'tag' }, 'ツール結果の続き') : null,
+    r.prompt ? r.prompt : el('span', { class: 'muted' }, 'プロンプトは記録されていません')
+  );
+  const details = el('details', {}, el('summary', { class: 'row' }, meta, figs, bars, prompt));
+  if (openIds.has(r.id)) {
+    details.open = true;
+    details.append(detail(r));
+  }
+  details.addEventListener('toggle', () => {
+    if (details.open) {
+      openIds.add(r.id);
+      if (!details.querySelector('.detail')) details.append(detail(r));
+    } else {
+      openIds.delete(r.id);
+    }
+  });
+  return el('li', { class: arrived ? 'rec arrived' : 'rec' }, details);
+}
+
+function detail(r) {
+  const facts = [];
+  if (!r.usage_found) facts.push(['使用量', 'レスポンスから読み取れませんでした']);
+  facts.push(
+    ['キャッシュ読込', nf.format(r.cache_read_tokens)],
+    ['新規入力', nf.format(r.input_tokens)],
+    ['キャッシュ書込', nf.format(r.cache_write_tokens)],
+    ['出力', nf.format(r.output_tokens) + (r.reasoning_tokens ? `（うち推論 ${nf.format(r.reasoning_tokens)}）` : '')],
+    ['所要時間', fmtDur(r.duration_ms)],
+    ['メッセージ数', nf.format(r.messages)],
+    ['通信', r.transport === 'websocket' ? 'WebSocket' : r.stream ? 'ストリーミング' : '通常'],
+    ['接続先', r.host + r.path],
+    ['ステータス', r.status ? String(r.status) : 'なし']
+  );
+  if (r.error) facts.push(['エラー', r.error]);
+
+  const sections = [
+    el('section', {}, el('h3', {}, r.prompt_kind === 'tool_result' ? 'プロンプト（このツール実行のきっかけ）' : 'プロンプト'),
+      el('pre', {}, r.prompt || '記録されていません')),
+  ];
+  if (r.system_prompt_id) {
+    sections.push(el('section', {}, el('h3', {}, 'システムプロンプト'),
+      el('button', { type: 'button', onclick: () => showSystemPrompt(r) }, `全文を表示（${nf.format(r.system_prompt_chars)} 文字）`)));
+  }
+  sections.push(el('section', {}, el('h3', {}, '内訳'),
+    el('dl', { class: 'facts' }, facts.map(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]))));
+  return el('div', { class: 'detail' }, sections);
+}
+
+async function showSystemPrompt(r) {
+  const dlg = document.getElementById('sysdlg');
+  const body = document.getElementById('sysdlg-body');
+  document.getElementById('sysdlg-title').textContent =
+    `システムプロンプト（${nf.format(r.system_prompt_chars)} 文字）`;
+  body.textContent = '読み込んでいます';
+  dlg.showModal();
+  try {
+    const res = await fetch(`/api/system-prompts/${encodeURIComponent(r.system_prompt_id)}`, { cache: 'no-store' });
+    body.textContent = res.ok
+      ? await res.text()
+      : 'ファイルが見つかりません。保存先の system-prompts フォルダから削除された可能性があります。';
+  } catch {
+    body.textContent = 'tokscope に接続できません。tokscope が動いているか確認してください。';
+  }
+  dlg.scrollTop = 0;
+}
+document.getElementById('sysdlg-close').addEventListener('click', () => document.getElementById('sysdlg').close());
+document.getElementById('sysdlg').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.close();
+});
+
+async function refresh() {
+  let data;
+  try {
+    const res = await fetch('/api/recent', { cache: 'no-store' });
+    if (!res.ok) return;
+    data = await res.json();
+  } catch {
+    return;
+  }
+  renderSummary(data.today);
+  const recs = data.records || [];
+  document.getElementById('empty').hidden = recs.length > 0;
+  document.getElementById('listcap').textContent = recs.length ? `直近 ${nf.format(recs.length)} 件` : '';
+  const maxIn = Math.max(1, ...recs.map((r) => r.total_input_tokens || 0));
+  const maxOut = Math.max(1, ...recs.map((r) => r.output_tokens || 0));
+  const first = seenIds === null;
+  document.getElementById('records').replaceChildren(
+    ...recs.map((r) => row(r, maxIn, maxOut, !first && !seenIds.has(r.id)))
+  );
+  seenIds = new Set(recs.map((r) => r.id));
+  for (const id of [...openIds]) if (!seenIds.has(id)) openIds.delete(id);
+}
+
+function connect() {
+  const live = document.getElementById('live');
+  const es = new EventSource('/api/stream');
+  es.onopen = () => {
+    live.textContent = '受信中';
+    live.classList.add('on');
+    refresh();
+  };
+  es.addEventListener('update', refresh);
+  es.onerror = () => {
+    live.textContent = '再接続しています';
+    live.classList.remove('on');
+  };
+}
+
+refresh();
+connect();
+setInterval(refresh, 60000);
+</script>
+</body>
+</html>
