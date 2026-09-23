@@ -1,5 +1,5 @@
 # GoReleaser v2. `git tag v0.1.0 && git push --tags` でリリースされます。
-# YOUR_GITHUB は自分の GitHub ユーザー名に置き換えてください。
+# cobayo は自分の GitHub ユーザー名に置き換えてください。
 version: 2
 project_name: tokscope
 
@@ -26,15 +26,15 @@ checksum:
 changelog:
   use: github
 
-# macOS: brew install YOUR_GITHUB/tap/tokscope
+# macOS: brew install cobayo/tap/tokscope
 # (brews: は v2.10 で非推奨になったため homebrew_casks を使います)
 homebrew_casks:
   - name: tokscope
     binaries: [tokscope]
-    homepage: https://github.com/YOUR_GITHUB/tokscope
+    homepage: https://github.com/cobayo/tokscope
     description: Local proxy that records token usage of Claude Code, Codex and other AI CLIs
     repository:
-      owner: YOUR_GITHUB
+      owner: cobayo
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     hooks:
@@ -45,13 +45,13 @@ homebrew_casks:
             system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/tokscope"]
           end
 
-# Windows: scoop bucket add tokscope https://github.com/YOUR_GITHUB/scoop-bucket
+# Windows: scoop bucket add tokscope https://github.com/cobayo/scoop-bucket
 #          scoop install tokscope
 scoops:
   - name: tokscope
-    homepage: https://github.com/YOUR_GITHUB/tokscope
+    homepage: https://github.com/cobayo/tokscope
     description: Local proxy that records token usage of Claude Code, Codex and other AI CLIs
     repository:
-      owner: YOUR_GITHUB
+      owner: cobayo
       name: scoop-bucket
       token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"

@@ -14,14 +14,14 @@ claude ──HTTPS_PROXY──▶ tokscope (127.0.0.1:8899) ──▶ api.anthro
 
 ```sh
 # macOS
-brew install --cask YOUR_GITHUB/tap/tokscope
+brew install --cask cobayo/tap/tokscope
 
 # Windows (PowerShell)
-scoop bucket add tokscope https://github.com/YOUR_GITHUB/scoop-bucket
+scoop bucket add tokscope https://github.com/cobayo/scoop-bucket
 scoop install tokscope
 
 # Linux / その他（Go 1.22 以降）
-go install github.com/YOUR_GITHUB/tokscope@latest
+go install github.com/cobayo/tokscope@latest
 ```
 
 Releases ページの tar.gz / zip を展開して PATH に置いても使えます。
@@ -31,7 +31,7 @@ Releases ページの tar.gz / zip を展開して PATH に置いても使えま
 ソースからビルドする場合は Go 1.22 以降が必要です。外部ライブラリには依存していないため、`go build` だけで完結します。
 
 ```sh
-git clone https://github.com/YOUR_GITHUB/tokscope.git
+git clone https://github.com/cobayo/tokscope.git
 cd tokscope
 go build -o tokscope .
 ```
@@ -190,10 +190,8 @@ go build -o tokscope .
 
 `v0.1.0` のようなタグを push すると、GitHub Actions が GoReleaser でビルドし、Homebrew tap と Scoop bucket を更新します。事前に次を用意してください。
 
-1. `YOUR_GITHUB` をすべて自分のユーザー名に置き換える（`go.mod`、`.goreleaser.yaml`、この README）
-2. 空のリポジトリ `homebrew-tap` と `scoop-bucket` を作る
-3. それらに push できるトークンを、Secrets の `HOMEBREW_TAP_GITHUB_TOKEN` と `SCOOP_BUCKET_GITHUB_TOKEN` に登録する
-4. ライセンスを決めて `LICENSE` を追加する
+1. 空のリポジトリ `homebrew-tap` と `scoop-bucket` を作る
+2. それらに push できるトークンを、Secrets の `HOMEBREW_TAP_GITHUB_TOKEN` と `SCOOP_BUCKET_GITHUB_TOKEN` に登録する
 
 | ファイル | 役割 |
 |---|---|

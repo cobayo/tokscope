@@ -1,3 +1,3 @@
-module github.com/YOUR_GITHUB/tokscope
+module github.com/cobayo/tokscope
 
 go 1.22
