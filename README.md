@@ -28,22 +28,83 @@ go install github.com/cobayo/tokscope@latest
 
 You can also unpack the tar.gz / zip from the Releases page and put it on your PATH.
 
-## Build
+## Quickstart: start the proxy, then use Claude
 
-Building from source requires Go 1.22+. There are no external dependencies, so `go build` is
-all you need.
+Start tokscope once, then launch `claude` normally from a shell configured to use the proxy.
+The following commands are for bash / zsh on macOS or Linux. If you built from source and
+haven't added the binary to your PATH, use `./tokscope` instead of `tokscope`.
+
+**1. Start the proxy in terminal 1:**
 
 ```sh
-git clone https://github.com/cobayo/tokscope.git
-cd tokscope
-go build -o tokscope .
+tokscope adhocrun
 ```
 
-Put the resulting `tokscope` binary somewhere on your PATH.
+Leave this terminal running. `adhocrun` is an alias for `serve`: it runs in the foreground
+and stops when you press Ctrl+C. If tokscope is already running on port 8899, use that
+instance and continue with step 2.
 
-## Usage
+**2. Configure terminal 2 and launch Claude:**
 
-Prefix the tool with `tokscope run --` to launch it.
+```sh
+export https_proxy=http://127.0.0.1:8899
+export NODE_EXTRA_CA_CERTS="$HOME/.tokscope/ca.pem"
+claude
+```
+
+Use `http://` in the proxy URL, even for HTTPS requests. `NODE_EXTRA_CA_CERTS` lets Claude
+trust tokscope's CA so that tokscope can inspect HTTPS traffic. These settings apply to
+this shell and the programs you launch from it; no OS certificate registration is needed.
+The example assumes the default storage directory and no existing `NODE_EXTRA_CA_CERTS`.
+For a custom setup or an existing CA bundle, use the [generated settings below](#generate-shell-settings).
+
+**3. Send a prompt, then check the dashboard:**
+
+Open **http://127.0.0.1:8899/** to see the latest 30 requests after they finish.
+You can also run `tokscope tail` in another terminal. Records are saved in
+`~/.tokscope/logs/usage.jsonl`.
+
+When finished, exit Claude and stop tokscope with Ctrl+C in terminal 1. Close terminal 2
+to discard its environment settings, or restore your previous proxy and CA settings before
+continuing to use it.
+
+### Generate shell settings
+
+With `tokscope adhocrun` running in terminal 1, you can have tokscope generate all proxy
+and certificate variables in terminal 2 instead of writing the exports yourself:
+
+```sh
+# bash / zsh
+eval "$(tokscope env)"
+claude
+```
+
+For other shells, use the matching command before launching your tool:
+
+```fish
+# fish
+tokscope env --shell fish | source
+claude
+```
+
+```powershell
+# PowerShell
+tokscope env --shell powershell | Invoke-Expression
+claude
+```
+
+`tokscope env` includes settings for Claude Code, Codex, and Gemini CLI and preserves
+existing CA bundles. It prints shell commands; it does not start the proxy.
+For example, after applying these settings you can launch `codex` or `gemini` directly
+instead of `claude`. See [Coverage](#coverage) for verification status and limitations.
+
+If you use a custom `TOKSCOPE_HOME`, set it in both terminals. If you start the proxy with
+`tokscope adhocrun --listen 127.0.0.1:18899`, change the manual proxy URL to that port,
+or set `TOKSCOPE_LISTEN=127.0.0.1:18899` before running `tokscope env`.
+
+### Alternative: configure one command only
+
+Use `run` if you prefer tokscope to configure and launch a single tool:
 
 ```sh
 tokscope run -- claude
@@ -51,32 +112,24 @@ tokscope run -- codex
 tokscope run -- gemini
 ```
 
-While running, you can check the latest 30 requests at http://127.0.0.1:8899/. To view them in
-the terminal, use `tokscope tail`.
+`run` passes proxy and certificate variables **only to the command it launches**.
+If tokscope is already running, it uses that instance; otherwise it starts a temporary
+proxy that stops when the tool exits. It does not change your shell configuration or
+OS certificate store.
 
-```
-TIME      CLIENT       MODEL                             INPUT  CACHE     OUTPUT  PROMPT
-08:24:33  Claude Code  claude-sonnet-4-5-20250929       32,326    96%        318  ↳ Also add rollback steps for the migration
-08:23:43  Claude Code  claude-sonnet-4-5-20250929       31,560    92%      2,651  Also add rollback steps for the migration
-08:17:03  Gemini CLI   gemini-2.5-pro                    9,480     0%        730  Explain this repo's structure
-```
+## Build from source
 
-`run` passes proxy environment variables (`HTTPS_PROXY`, `NODE_EXTRA_CA_CERTS`, `CODEX_CA_CERTIFICATE`, etc.)
-**only to the command it launches**. It doesn't touch your OS certificate store or shell
-configuration. If tokscope is already running, it logs to that instance; otherwise it starts a
-temporary instance that lasts until the tool exits.
-
-### Running it as a background service
-
-If you want to record tools that are hard to wrap with `run` (IDE extensions, for example), run
-the proxy as a background service instead.
+Building from source requires Go 1.22+. There are no external dependencies.
 
 ```sh
-tokscope serve                       # keep running in another terminal
-eval "$(tokscope env)"               # bash / zsh
-tokscope env | source                # fish
-tokscope env | Invoke-Expression     # PowerShell
+git clone https://github.com/cobayo/tokscope.git
+cd tokscope
+go build -o tokscope .
+./tokscope adhocrun
 ```
+
+Put the resulting `tokscope` binary on your PATH, or keep using `./tokscope` from the
+repository directory in the commands above.
 
 ## What gets recorded
 
@@ -186,9 +239,10 @@ These can also be overridden with the environment variables `TOKSCOPE_HOME` (sto
 
 ## About Windows
 
-The same binary works as-is. Install it with Scoop and use it from PowerShell, e.g.
-`tokscope run -- claude`. Certificates are passed to the child process via environment variables,
-so no administrator privileges or certificate store registration are needed. For tools used inside
+Install with Scoop, then run `tokscope adhocrun` in one PowerShell window. In another,
+apply the [PowerShell environment settings](#generate-shell-settings) and launch `claude`.
+Certificates are configured through environment variables, so no administrator privileges
+or certificate store registration are needed. For tools used inside
 WSL, install the Linux build inside WSL to record them.
 
 Only if you need to record tools that don't read environment variables, register the CA with your

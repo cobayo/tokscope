@@ -15,6 +15,7 @@ const usageText = `tokscope — AI コーディングツールのトークン消
 使い方:
   tokscope run -- <command> [args...]    プロキシ経由でコマンドを起動します（例: tokscope run -- claude）
   tokscope serve [--listen addr]         プロキシとダッシュボードを常駐させます
+  tokscope adhocrun [--listen addr]      serve と同じ（別ターミナルでツールを起動）
   tokscope tail [-n 10] [--json]         最新の記録をターミナルに表示します
   tokscope env [--shell sh|fish|powershell|cmd]
                                          serve と組み合わせて使う環境変数を出力します
@@ -34,7 +35,7 @@ func main() {
 	switch os.Args[1] {
 	case "run":
 		code = cmdRun(os.Args[2:])
-	case "serve":
+	case "serve", "adhocrun":
 		code = cmdServe(os.Args[2:])
 	case "tail":
 		code = cmdTail(os.Args[2:])
