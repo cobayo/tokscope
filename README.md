@@ -192,21 +192,22 @@ tokscope only inspects traffic to the hosts below; everything else passes throug
 | Claude Code on Bedrock | bedrock-runtime.*.amazonaws.com | InvokeModel(Stream), Converse(Stream) | Mocked (including not breaking SigV4 signing) |
 | Claude Code on Vertex AI | *-aiplatform.googleapis.com | rawPredict / streamRawPredict | Mocked |
 | Claude on Azure AI Foundry | *.services.ai.azure.com | Messages | Mocked |
-| Codex (ChatGPT login) | chatgpt.com | Responses (SSE / WebSocket) | Mocked, **needs real-world verification** |
+| Codex (ChatGPT login) | chatgpt.com | Responses (SSE / WebSocket) | Mocked; see Codex verification note below |
 | Codex (API key) | api.openai.com | Responses | Mocked |
 | Azure OpenAI | *.openai.azure.com, etc. | Chat Completions / Responses | Mocked |
 | Gemini CLI (Google login) | cloudcode-pa.googleapis.com | Code Assist | Mocked, **needs real-world verification** |
 | Gemini API / Vertex Gemini | generativelanguage.googleapis.com, *-aiplatform.googleapis.com | generateContent (SSE / JSON) | Mocked |
 | LiteLLM | specified via `extra_hosts` | Messages / Chat Completions / Responses | Mocked |
 
-Items flagged as needing real-world verification:
+Verification notes:
 
-- **Codex**: Newer versions sometimes use WebSocket for the Responses API. tokscope reads and
-  records WebSocket frames too, but it's unverified whether Codex's WebSocket connection honors
-  `HTTPS_PROXY`. If Codex rows don't show up, check `~/.tokscope/logs/tokscope.log`. It's also
-  unverified whether `CODEX_CA_CERTIFICATE` gets added to the default trust store or replaces it,
-  so as a precaution tokscope passes a bundle of the system certificates plus tokscope's own CA
-  (on Windows, system certificates can't be extracted as a file, so only tokscope's CA is passed).
+- **Codex CLI**: The maintainer has confirmed real-world logging. The authentication mode
+  and transport used for that check were not recorded, so the route-specific entries above
+  retain their mock-test status. This does not establish coverage of every Codex mode.
+  If records are missing, check the terminal running `adhocrun` / `serve`, or
+  `~/.tokscope/logs/tokscope.log` when using `run`. tokscope supplies a bundle of system
+  certificates plus its own CA through `env` / `run` (on Windows, only tokscope's CA
+  is supplied because system certificates cannot be extracted as a file).
 - **Gemini CLI**: It's unverified whether it reads proxy environment variables. If requests aren't
   recorded, set Gemini CLI's own proxy setting to `http://127.0.0.1:8899`.
 
@@ -263,9 +264,9 @@ OS by following the instructions from `tokscope ca`.
 
 ## Limitations
 
-- Verification has only gone as far as mock-server tests and confirming relay to the real
-  api.anthropic.com (unauthenticated). Matching each provider's actual billed amounts hasn't been
-  checked.
+- Verification includes mock-server tests, relay to the real api.anthropic.com
+  (unauthenticated), and maintainer-confirmed Codex CLI logging. Matching each provider's
+  actual billed amounts has not been checked.
 - When streaming Chat Completions with Azure OpenAI or LiteLLM, token counts won't come back
   ("no usage data") unless the client sets `stream_options.include_usage`.
 - Logs are not rotated. Move or delete `usage.jsonl` once it gets large.
