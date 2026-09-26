@@ -9,7 +9,7 @@ claude ──HTTPS_PROXY──▶ tokscope (127.0.0.1:8899) ──▶ api.anthro
                           │ Decrypts only AI API hosts to read usage
                           │ Everything else (github.com, etc.) passes through untouched
                           ▼
-                 ~/.tokscope/logs/usage.jsonl ──▶ http://127.0.0.1:8899/
+                 ~/.tokscoop/logs/usage.jsonl ──▶ http://127.0.0.1:8899/
 ```
 
 ## Install
@@ -42,22 +42,22 @@ instance and continue with step 2.
 **2. Configure terminal 2 and launch Claude:**
 
 ```sh
-export https_proxy=http://127.0.0.1:8899
-export NODE_EXTRA_CA_CERTS="$HOME/.tokscope/ca.pem"
+eval "$(tokscope env --shell sh)"
 claude
 ```
 
-Use `http://` in the proxy URL, even for HTTPS requests. `NODE_EXTRA_CA_CERTS` lets Claude
-trust tokscope's CA so that tokscope can inspect HTTPS traffic. These settings apply to
-this shell and the programs you launch from it; no OS certificate registration is needed.
-The example assumes the default storage directory and no existing `NODE_EXTRA_CA_CERTS`.
-For a custom setup or an existing CA bundle, use the [generated settings below](#generate-shell-settings).
+This sets the proxy and CA certificate variables for Claude and Codex.
+To use Codex, run `codex` instead of `claude` after the same `eval` command.
+Claude reads `NODE_EXTRA_CA_CERTS`; Codex reads `CODEX_CA_CERTIFICATE`.
+Setting only `NODE_EXTRA_CA_CERTS` does not configure Codex's certificate trust.
+These settings apply to this shell and the programs you launch from it; existing
+processes must be restarted. Existing CA bundles are preserved.
 
 **3. Send a prompt, then check the dashboard:**
 
 Open **http://127.0.0.1:8899/** to see the latest 30 requests after they finish.
 You can also run `tokscope tail` in another terminal. Records are saved in
-`~/.tokscope/logs/usage.jsonl`.
+`~/.tokscoop/logs/usage.jsonl`.
 
 When finished, exit Claude and stop tokscope with Ctrl+C in terminal 1. Close terminal 2
 to discard its environment settings, or restore your previous proxy and CA settings before
@@ -65,37 +65,40 @@ continuing to use it.
 
 ### Generate shell settings
 
-With `tokscope adhocrun` running in terminal 1, you can have tokscope generate all proxy
-and certificate variables in terminal 2 instead of writing the exports yourself:
+With `tokscope adhocrun` running in terminal 1, apply the proxy and certificate
+settings in terminal 2, then launch your tool:
 
 ```sh
 # bash / zsh
-eval "$(tokscope env)"
+eval "$(tokscope env --shell sh)"
 claude
 ```
 
-For other shells, use the matching command before launching your tool:
+The startup message uses the executable you launched. For a local build such as
+`./tokscoop adhocrun`, it prints an absolute executable path so the command also
+works from another directory. Paths containing spaces are quoted automatically.
+
+For other shells:
 
 ```fish
 # fish
 tokscope env --shell fish | source
-claude
 ```
 
 ```powershell
 # PowerShell
 tokscope env --shell powershell | Invoke-Expression
-claude
 ```
 
-`tokscope env` includes settings for Claude Code, Codex, and Gemini CLI and preserves
+`tokscope env` includes settings for Claude Code and Codex and preserves
 existing CA bundles. It prints shell commands; it does not start the proxy.
-For example, after applying these settings you can launch `codex` or `gemini` directly
+For example, after applying these settings you can launch `codex` directly
 instead of `claude`. See [Coverage](#coverage) for verification status and limitations.
 
 If you use a custom `TOKSCOPE_HOME`, set it in both terminals. If you start the proxy with
 `tokscope adhocrun --listen 127.0.0.1:18899`, change the manual proxy URL to that port,
-or set `TOKSCOPE_LISTEN=127.0.0.1:18899` before running `tokscope env`.
+or use `tokscope env --listen 127.0.0.1:18899`. The startup command includes this
+option automatically when the server is started with `--listen`.
 
 ### Alternative: configure one command only
 
@@ -104,7 +107,6 @@ Use `run` if you prefer tokscope to configure and launch a single tool:
 ```sh
 tokscope run -- claude
 tokscope run -- codex
-tokscope run -- gemini
 ```
 
 `run` passes proxy and certificate variables **only to the command it launches**.
@@ -128,11 +130,11 @@ repository directory in the commands above.
 
 ## What gets recorded
 
-One line is appended to `~/.tokscope/logs/usage.jsonl` per request.
+One line is appended to `~/.tokscoop/logs/usage.jsonl` per request.
 
 | Field | Description |
 |---|---|
-| `client` | Claude Code / Codex / Gemini CLI, etc. (detected from the User-Agent) |
+| `client` | Claude Code / Codex, etc. (detected from the User-Agent) |
 | `model` | The model name returned in the response (falls back to the request or URL if absent) |
 | `input_tokens` | Input that didn't come from cache |
 | `cache_read_tokens` / `cache_write_tokens` | Input read from cache / input written to cache |
@@ -155,14 +157,13 @@ that `total_input_tokens = input_tokens + cache_read_tokens + cache_write_tokens
 
 Claude Code sends a system prompt that's tens of thousands of characters long on every request, so
 instead of writing it into the log directly, tokscope hashes the content into an ID and stores it
-once at `~/.tokscope/system-prompts/<ID>.txt`. You can follow it from the log's
+once at `~/.tokscoop/system-prompts/<ID>.txt`. You can follow it from the log's
 `system_prompt_id`, or read it by expanding a row on the dashboard and clicking "Show full text".
 Whenever the ID changes, the system prompt changed.
 
 - Anthropic format: `system`
 - OpenAI Responses (Codex): `instructions`, plus messages with the `system` / `developer` role
 - Chat Completions: messages with the `system` / `developer` role
-- Gemini: `systemInstruction`
 - Bedrock Converse: `system`
 
 ### Aggregating with jq
@@ -171,10 +172,10 @@ Whenever the ID changes, the system prompt changed.
 # Today's totals (ts is recorded in local time)
 jq -s --arg d "$(date +%F)" 'map(select(.ts | startswith($d)))
   | {requests: length, input: (map(.total_input_tokens) | add), output: (map(.output_tokens) | add)}' \
-  ~/.tokscope/logs/usage.jsonl
+  ~/.tokscoop/logs/usage.jsonl
 
 # Output tokens by model
-jq -s 'group_by(.model) | map({model: .[0].model, output: (map(.output_tokens) | add)})' ~/.tokscope/logs/usage.jsonl
+jq -s 'group_by(.model) | map({model: .[0].model, output: (map(.output_tokens) | add)})' ~/.tokscoop/logs/usage.jsonl
 ```
 
 ## Coverage
@@ -185,13 +186,8 @@ tokscope only inspects traffic to the hosts below; everything else passes throug
 |---|---|---|---|
 | Claude Code (API key / Claude account) | api.anthropic.com | Messages (SSE / JSON) | Verified relaying to the real API; usage parsing is mocked |
 | Claude Code on Bedrock | bedrock-runtime.*.amazonaws.com | InvokeModel(Stream), Converse(Stream) | Mocked (including not breaking SigV4 signing) |
-| Claude Code on Vertex AI | *-aiplatform.googleapis.com | rawPredict / streamRawPredict | Mocked |
-| Claude on Azure AI Foundry | *.services.ai.azure.com | Messages | Mocked |
 | Codex (ChatGPT login) | chatgpt.com | Responses (SSE / WebSocket) | Mocked; see Codex verification note below |
 | Codex (API key) | api.openai.com | Responses | Mocked |
-| Azure OpenAI | *.openai.azure.com, etc. | Chat Completions / Responses | Mocked |
-| Gemini CLI (Google login) | cloudcode-pa.googleapis.com | Code Assist | Mocked, **needs real-world verification** |
-| Gemini API / Vertex Gemini | generativelanguage.googleapis.com, *-aiplatform.googleapis.com | generateContent (SSE / JSON) | Mocked |
 | LiteLLM | specified via `extra_hosts` | Messages / Chat Completions / Responses | Mocked |
 
 Verification notes:
@@ -200,15 +196,18 @@ Verification notes:
   and transport used for that check were not recorded, so the route-specific entries above
   retain their mock-test status. This does not establish coverage of every Codex mode.
   If records are missing, check the terminal running `adhocrun` / `serve`, or
-  `~/.tokscope/logs/tokscope.log` when using `run`. tokscope supplies a bundle of system
+  `~/.tokscoop/logs/tokscoop.log` when using `run`. tokscope supplies a bundle of system
   certificates plus its own CA through `env` / `run` (on Windows, only tokscope's CA
   is supplied because system certificates cannot be extracted as a file).
-- **Gemini CLI**: It's unverified whether it reads proxy environment variables. If requests aren't
-  recorded, set Gemini CLI's own proxy setting to `http://127.0.0.1:8899`.
+  If the proxy reports a client TLS handshake failure, exit Codex, run
+  `eval "$(tokscope env --shell sh)"` in the terminal where you will launch it, and
+  start `codex` again. A manual `NODE_EXTRA_CA_CERTS` export is only for Node-based
+  clients and is insufficient for Codex. Check `echo "$CODEX_CA_CERTIFICATE"`
+  in that same terminal if the error persists.
 
 ## Configuration
 
-`~/.tokscope/config.json` (optional):
+`~/.tokscoop/config.json` (optional):
 
 ```json
 {
@@ -233,6 +232,12 @@ Verification notes:
 These can also be overridden with the environment variables `TOKSCOPE_HOME` (storage location),
 `TOKSCOPE_LISTEN` (listen address), and `TOKSCOPE_UPSTREAM_PROXY`.
 
+The default storage directory is now `~/.tokscoop`. Existing `~/.tokscope` data is
+not moved automatically. To retain your CA, configuration, and logs, stop the proxy
+and move `~/.tokscope` to `~/.tokscoop` if the new directory does not yet exist, then
+update any certificate paths in your shell settings. Alternatively, keep using
+the old directory by setting `TOKSCOPE_HOME="$HOME/.tokscope"` in both terminals.
+
 ## About Windows
 
 Download the Windows zip from the Releases page, extract it, and put `tokscope.exe`
@@ -249,7 +254,7 @@ OS by following the instructions from `tokscope ca`.
 
 - Only listens on `127.0.0.1`. The dashboard rejects requests whose Host header isn't itself (DNS
   rebinding protection).
-- `~/.tokscope/ca-key.pem` is a key that lets you impersonate AI API hosts to any process that
+- `~/.tokscoop/ca-key.pem` is a key that lets you impersonate AI API hosts to any process that
   trusts this CA. Don't share it. If deleted, it's regenerated on next startup.
 - Prompts and system prompts remain in the log. Files are created with owner-only read permissions
   (0600). API keys, auth headers, and URL query strings are never recorded.
@@ -263,7 +268,7 @@ OS by following the instructions from `tokscope ca`.
 - Verification includes mock-server tests, relay to the real api.anthropic.com
   (unauthenticated), and maintainer-confirmed Codex CLI logging. Matching each provider's
   actual billed amounts has not been checked.
-- When streaming Chat Completions with Azure OpenAI or LiteLLM, token counts won't come back
+- When streaming Chat Completions with LiteLLM, token counts won't come back
   ("no usage data") unless the client sets `stream_options.include_usage`.
 - Logs are not rotated. Move or delete `usage.jsonl` once it gets large.
 - Only HTTP/1.1 is used between tokscope and the client (HTTP/2 is only used upstream).

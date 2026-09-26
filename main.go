@@ -17,7 +17,7 @@ const usageText = `tokscope — AI コーディングツールのトークン消
   tokscope serve [--listen addr]         プロキシとダッシュボードを常駐させます
   tokscope adhocrun [--listen addr]      serve と同じ（別ターミナルでツールを起動）
   tokscope tail [-n 10] [--json]         最新の記録をターミナルに表示します
-  tokscope env [--shell sh|fish|powershell|cmd]
+  tokscope env [--shell sh|fish|powershell|cmd] [--listen addr]
                                          serve と組み合わせて使う環境変数を出力します
   tokscope ca [--path]                   CA 証明書の場所と、OS に登録する方法を表示します
   tokscope version
@@ -73,7 +73,7 @@ func setup(cfg *Config, logger *log.Logger) (*Proxy, error) {
 func fileLogger() *log.Logger {
 	dir := filepath.Join(homeDir(), "logs")
 	_ = os.MkdirAll(dir, 0o700)
-	f, err := os.OpenFile(filepath.Join(dir, "tokscope.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	f, err := os.OpenFile(filepath.Join(dir, "tokscoop.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return log.New(io.Discard, "", 0)
 	}

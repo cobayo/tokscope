@@ -13,13 +13,6 @@ var builtinHosts = []struct{ pattern, provider string }{
 	{"api.anthropic.com", "anthropic"},
 	{"api.openai.com", "openai"},
 	{"chatgpt.com", "openai"}, // Codex signed in with ChatGPT
-	{"*.openai.azure.com", "azure"},
-	{"*.services.ai.azure.com", "azure"}, // Azure AI Foundry (incl. Claude)
-	{"*.cognitiveservices.azure.com", "azure"},
-	{"generativelanguage.googleapis.com", "gemini"},
-	{"cloudcode-pa.googleapis.com", "gemini"}, // Gemini CLI signed in with Google
-	{"aiplatform.googleapis.com", "vertex"},
-	{"*-aiplatform.googleapis.com", "vertex"},
 	{"bedrock-runtime.*.amazonaws.com", "bedrock"},
 	{"bedrock-runtime-fips.*.amazonaws.com", "bedrock"},
 }

@@ -1,8 +1,8 @@
 # tokscope
 
-A local proxy that sits between AI coding tools (Claude Code, Codex, Gemini CLI, etc.) and their
+A local proxy that sits between AI coding tools (Claude Code and Codex) and their
 APIs. It terminates TLS only for known AI API hosts, reads token usage from the traffic, and logs
-it to `~/.tokscope/logs/usage.jsonl` with a browser dashboard at `http://127.0.0.1:8899/`.
+it to `~/.tokscoop/logs/usage.jsonl` with a browser dashboard at `http://127.0.0.1:8899/`.
 Everything else is passed through undecrypted. Single Go binary, no external dependencies.
 
 ## Build

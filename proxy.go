@@ -110,7 +110,7 @@ func (p *Proxy) handleConnect(w http.ResponseWriter, r *http.Request) {
 	}
 	hj, ok := w.(http.Hijacker)
 	if !ok {
-		http.Error(w, "tokscope: hijacking not supported", http.StatusInternalServerError)
+		http.Error(w, "tokscoop: hijacking not supported", http.StatusInternalServerError)
 		return
 	}
 	provider := p.matcher.Match(target)
@@ -118,7 +118,7 @@ func (p *Proxy) handleConnect(w http.ResponseWriter, r *http.Request) {
 		// Not an AI API: plain tunnel, never decrypted.
 		up, err := p.dialTunnel(r.Context(), target)
 		if err != nil {
-			http.Error(w, "tokscope: "+err.Error(), http.StatusBadGateway)
+			http.Error(w, "tokscoop: "+err.Error(), http.StatusBadGateway)
 			return
 		}
 		conn, brw, err := hj.Hijack()
@@ -135,10 +135,10 @@ func (p *Proxy) handleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, _ = io.WriteString(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
-	p.serveMITM(&bufferedConn{Conn: conn, r: brw.Reader}, target, provider)
+	p.serveMITM(&bufferedConn{Conn: conn, r: brw.Reader}, target, provider, r.UserAgent())
 }
 
-func (p *Proxy) serveMITM(conn net.Conn, target, provider string) {
+func (p *Proxy) serveMITM(conn net.Conn, target, provider, userAgent string) {
 	host, _, _ := net.SplitHostPort(target)
 	tlsConn := tls.Server(conn, &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -153,7 +153,11 @@ func (p *Proxy) serveMITM(conn net.Conn, target, provider string) {
 	})
 	_ = tlsConn.SetDeadline(time.Now().Add(30 * time.Second))
 	if err := tlsConn.Handshake(); err != nil {
-		p.log.Printf("%s: クライアントとのTLSハンドシェイクに失敗しました（tokscope の CA を信頼していない可能性があります）: %v", host, err)
+		if len(userAgent) > 256 {
+			userAgent = userAgent[:256]
+		}
+		p.log.Printf("%s: クライアントとのTLSハンドシェイクに失敗しました (client=%s, user_agent=%q, ca=%s): %v", host, conn.RemoteAddr(), userAgent, p.ca.CertPath, err)
+		p.log.Print("ツールを起動するターミナルで tokscope env の設定を適用し、ツールを再起動してください。Codex は CODEX_CA_CERTIFICATE、Claude Code は NODE_EXTRA_CA_CERTS を確認してください。")
 		conn.Close()
 		return
 	}
@@ -221,7 +225,7 @@ func (p *Proxy) passthrough(w http.ResponseWriter, r *http.Request, u *url.URL) 
 	resp, err := p.transport.RoundTrip(p.outgoing(r, u))
 	if err != nil {
 		p.log.Printf("%s: %v", u.Host, err)
-		http.Error(w, "tokscope: upstream error: "+err.Error(), http.StatusBadGateway)
+		http.Error(w, "tokscoop: upstream error: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
@@ -234,7 +238,7 @@ func (p *Proxy) intercept(w http.ResponseWriter, r *http.Request, u *url.URL, pr
 	start := time.Now()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "tokscope: failed to read request body", http.StatusBadRequest)
+		http.Error(w, "tokscoop: failed to read request body", http.StatusBadRequest)
 		return
 	}
 	ri := parseRequest(api, body)
@@ -267,7 +271,7 @@ func (p *Proxy) intercept(w http.ResponseWriter, r *http.Request, u *url.URL, pr
 		rec.Error = err.Error()
 		rec.DurationMs = time.Since(start).Milliseconds()
 		p.store.Add(rec)
-		http.Error(w, "tokscope: upstream error: "+err.Error(), http.StatusBadGateway)
+		http.Error(w, "tokscoop: upstream error: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
@@ -314,7 +318,7 @@ func (p *Proxy) applyRequest(rec *Record, ri ReqInfo, pathModel string, streamHi
 func (p *Proxy) handleUpgrade(w http.ResponseWriter, r *http.Request, u *url.URL, provider string) {
 	hj, ok := w.(http.Hijacker)
 	if !ok {
-		http.Error(w, "tokscope: upgrade not supported", http.StatusInternalServerError)
+		http.Error(w, "tokscoop: upgrade not supported", http.StatusInternalServerError)
 		return
 	}
 	addr := u.Host
@@ -327,7 +331,7 @@ func (p *Proxy) handleUpgrade(w http.ResponseWriter, r *http.Request, u *url.URL
 	}
 	up, err := p.dialTunnel(r.Context(), addr)
 	if err != nil {
-		http.Error(w, "tokscope: upstream error: "+err.Error(), http.StatusBadGateway)
+		http.Error(w, "tokscoop: upstream error: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	if u.Scheme == "https" {
@@ -337,7 +341,7 @@ func (p *Proxy) handleUpgrade(w http.ResponseWriter, r *http.Request, u *url.URL
 		tc := tls.Client(up, cfg)
 		if err := tc.HandshakeContext(r.Context()); err != nil {
 			up.Close()
-			http.Error(w, "tokscope: upstream TLS error: "+err.Error(), http.StatusBadGateway)
+			http.Error(w, "tokscoop: upstream TLS error: "+err.Error(), http.StatusBadGateway)
 			return
 		}
 		up = tc
@@ -359,14 +363,14 @@ func (p *Proxy) handleUpgrade(w http.ResponseWriter, r *http.Request, u *url.URL
 	_ = up.SetDeadline(time.Now().Add(60 * time.Second))
 	if err := out.Write(up); err != nil {
 		up.Close()
-		http.Error(w, "tokscope: upstream error: "+err.Error(), http.StatusBadGateway)
+		http.Error(w, "tokscoop: upstream error: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	ubr := bufio.NewReader(up)
 	resp, err := http.ReadResponse(ubr, out)
 	if err != nil {
 		up.Close()
-		http.Error(w, "tokscope: upstream error: "+err.Error(), http.StatusBadGateway)
+		http.Error(w, "tokscoop: upstream error: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 	_ = up.SetDeadline(time.Time{})

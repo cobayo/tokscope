@@ -58,7 +58,7 @@ func (p *Proxy) localOnly(h http.Handler) http.Handler {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !allowed[strings.ToLower(r.Host)] {
-			http.Error(w, "tokscope: forbidden host", http.StatusForbidden)
+			http.Error(w, "tokscoop: forbidden host", http.StatusForbidden)
 			return
 		}
 		h.ServeHTTP(w, r)

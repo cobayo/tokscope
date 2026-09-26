@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -26,7 +27,7 @@ func cmdRun(args []string) int {
 	}
 	cfg, err := loadConfig()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "tokscope:", err)
+		fmt.Fprintln(os.Stderr, "tokscoop:", err)
 		return 1
 	}
 
@@ -34,37 +35,37 @@ func cmdRun(args []string) int {
 	if running(cfg.Listen) {
 		ca, err := loadOrCreateCA(homeDir())
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "tokscope:", err)
+			fmt.Fprintln(os.Stderr, "tokscoop:", err)
 			return 1
 		}
 		caPath = ca.CertPath
-		fmt.Fprintf(os.Stderr, "tokscope: 起動中の tokscope に記録します → http://%s/\n", cfg.Listen)
+		fmt.Fprintf(os.Stderr, "tokscoop: 起動中の tokscope に記録します → http://%s/\n", cfg.Listen)
 	} else {
 		p, err := setup(cfg, fileLogger())
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "tokscope:", err)
+			fmt.Fprintln(os.Stderr, "tokscoop:", err)
 			return 1
 		}
 		ln, err := net.Listen("tcp", cfg.Listen)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "tokscope: %s で待ち受けできません: %v\n（ポートを変えるには TOKSCOPE_LISTEN=127.0.0.1:18899 のように指定してください）\n", cfg.Listen, err)
+			fmt.Fprintf(os.Stderr, "tokscoop: %s で待ち受けできません: %v\n（ポートを変えるには TOKSCOPE_LISTEN=127.0.0.1:18899 のように指定してください）\n", cfg.Listen, err)
 			return 1
 		}
 		srv := newServer(p)
 		go func() { _ = srv.Serve(ln) }()
 		defer srv.Close()
 		caPath = p.ca.CertPath
-		fmt.Fprintf(os.Stderr, "tokscope: 記録しています → http://%s/ （%s が終了するまで）\n", cfg.Listen, filepath.Base(args[0]))
+		fmt.Fprintf(os.Stderr, "tokscoop: 記録しています → http://%s/ （%s が終了するまで）\n", cfg.Listen, filepath.Base(args[0]))
 	}
 
 	if cur := firstEnv("HTTPS_PROXY", "https_proxy"); cur != "" && !pointsTo(cur, cfg.Listen) &&
 		cfg.UpstreamProxy == "" && os.Getenv("TOKSCOPE_UPSTREAM_PROXY") == "" {
-		fmt.Fprintf(os.Stderr, "tokscope: 既存の HTTPS_PROXY（%s）を上書きします。社内プロキシが必要な場合は config.json の upstream_proxy に設定してください。\n", cur)
+		fmt.Fprintf(os.Stderr, "tokscoop: 既存の HTTPS_PROXY（%s）を上書きします。社内プロキシが必要な場合は config.json の upstream_proxy に設定してください。\n", cur)
 	}
 
 	vars, err := proxyEnv(cfg, caPath)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "tokscope:", err)
+		fmt.Fprintln(os.Stderr, "tokscoop:", err)
 		return 1
 	}
 	cmd := exec.Command(args[0], args[1:]...)
@@ -75,7 +76,7 @@ func cmdRun(args []string) int {
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(sigs)
 	if err := cmd.Start(); err != nil {
-		fmt.Fprintf(os.Stderr, "tokscope: %s を起動できません: %v\n", args[0], err)
+		fmt.Fprintf(os.Stderr, "tokscoop: %s を起動できません: %v\n", args[0], err)
 		return 127
 	}
 	go func() {
@@ -111,7 +112,7 @@ func proxyEnv(cfg *Config, caPath string) ([]envVar, error) {
 		vars = append(vars, envVar{"https_proxy", proxyURL}, envVar{"http_proxy", proxyURL})
 	}
 
-	// Node-based tools (Claude Code, Gemini CLI): added to the built-in roots.
+	// Claude Code: added to Node's built-in roots.
 	nodeCA, err := bundle(caPath, os.Getenv("NODE_EXTRA_CA_CERTS"), false, "node-extra-ca.pem")
 	if err != nil {
 		return nil, err
@@ -283,49 +284,61 @@ func pointsTo(proxyURL, listen string) bool {
 	return err == nil && u.Port() == port && isLoopback(u.Hostname())
 }
 
-func cmdEnv(args []string) int {
+func defaultShell() string {
 	def := "sh"
 	if runtime.GOOS == "windows" {
 		def = "powershell"
 	} else if strings.HasSuffix(os.Getenv("SHELL"), "fish") {
 		def = "fish"
 	}
+	return def
+}
+
+func cmdEnv(args []string) int {
 	fs := flag.NewFlagSet("env", flag.ContinueOnError)
-	shell := fs.String("shell", def, "sh | fish | powershell | cmd")
+	listen := fs.String("listen", "", "プロキシの待ち受けアドレス")
+	shell := fs.String("shell", defaultShell(), "sh | fish | powershell | cmd")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 	cfg, err := loadConfig()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "tokscope:", err)
+		fmt.Fprintln(os.Stderr, "tokscoop:", err)
 		return 1
+	}
+	if *listen != "" {
+		cfg.Listen = *listen
 	}
 	ca, err := loadOrCreateCA(homeDir())
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "tokscope:", err)
+		fmt.Fprintln(os.Stderr, "tokscoop:", err)
 		return 1
 	}
 	vars, err := proxyEnv(cfg, ca.CertPath)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "tokscope:", err)
+		fmt.Fprintln(os.Stderr, "tokscoop:", err)
 		return 1
 	}
-	for _, v := range vars {
-		switch *shell {
-		case "fish":
-			fmt.Printf("set -gx %s '%s';\n", v.Key, strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(v.Value))
-		case "powershell", "pwsh":
-			fmt.Printf("$env:%s = '%s'\n", v.Key, strings.ReplaceAll(v.Value, "'", "''"))
-		case "cmd":
-			fmt.Printf("set %s=%s\n", v.Key, v.Value)
-		default:
-			fmt.Printf("export %s='%s'\n", v.Key, strings.ReplaceAll(v.Value, "'", `'\''`))
-		}
-	}
+	writeEnv(os.Stdout, *shell, vars)
 	if !running(cfg.Listen) {
-		fmt.Fprintln(os.Stderr, "tokscope: まだプロキシが動いていません。先に tokscope serve を起動してください。")
+		fmt.Fprintln(os.Stderr, "tokscoop: まだプロキシが動いていません。先に tokscope serve を起動してください。")
 	}
 	return 0
+}
+
+func writeEnv(w io.Writer, shell string, vars []envVar) {
+	for _, v := range vars {
+		switch shell {
+		case "fish":
+			fmt.Fprintf(w, "set -gx %s '%s';\n", v.Key, strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(v.Value))
+		case "powershell", "pwsh":
+			fmt.Fprintf(w, "$env:%s = '%s'\n", v.Key, strings.ReplaceAll(v.Value, "'", "''"))
+		case "cmd":
+			fmt.Fprintf(w, "set %s=%s\n", v.Key, v.Value)
+		default:
+			fmt.Fprintf(w, "export %s='%s'\n", v.Key, strings.ReplaceAll(v.Value, "'", `'\''`))
+		}
+	}
 }
 
 const caHelp = `CA 証明書: %s
@@ -351,7 +364,7 @@ func cmdCA(args []string) int {
 	}
 	ca, err := loadOrCreateCA(homeDir())
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "tokscope:", err)
+		fmt.Fprintln(os.Stderr, "tokscoop:", err)
 		return 1
 	}
 	if *pathOnly {

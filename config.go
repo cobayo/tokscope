@@ -36,9 +36,9 @@ func homeDir() string {
 	}
 	h, err := os.UserHomeDir()
 	if err != nil {
-		return ".tokscope"
+		return ".tokscoop"
 	}
-	return filepath.Join(h, ".tokscope")
+	return filepath.Join(h, ".tokscoop")
 }
 
 func loadConfig() (*Config, error) {

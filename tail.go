@@ -22,7 +22,7 @@ func cmdTail(args []string) int {
 	}
 	recs, err := readLastRecords(logPath(homeDir()), *n)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		fmt.Fprintln(os.Stderr, "tokscope:", err)
+		fmt.Fprintln(os.Stderr, "tokscoop:", err)
 		return 1
 	}
 	if *asJSON {
