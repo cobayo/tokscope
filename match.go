@@ -38,7 +38,7 @@ func newMatcher(extra []string) *Matcher {
 	return m
 }
 
-// Match returns the provider name for "host:port", or "" if tokscope should
+// Match returns the provider name for "host:port", or "" if tokscoop should
 // not look at this traffic.
 func (m *Matcher) Match(hostport string) string {
 	hostport = strings.ToLower(hostport)

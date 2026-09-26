@@ -1,4 +1,4 @@
-# tokscope
+# tokscoop
 
 A local proxy that sits between AI coding tools (Claude Code and Codex) and their
 APIs. It terminates TLS only for known AI API hosts, reads token usage from the traffic, and logs
@@ -10,7 +10,7 @@ Everything else is passed through undecrypted. Single Go binary, no external dep
 Requires Go 1.22+.
 
 ```sh
-go build -o tokscope .
+go build -o tokscoop .
 go test -race ./...
 ```
 

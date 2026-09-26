@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// ReqInfo is what tokscope extracts from a request body.
+// ReqInfo is what tokscoop extracts from a request body.
 type ReqInfo struct {
 	Model  string
 	Stream bool

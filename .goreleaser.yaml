@@ -1,9 +1,9 @@
 # GoReleaser v2. `git tag v0.1.0 && git push --tags` でリリースされます。
 version: 2
-project_name: tokscope
+project_name: tokscoop
 
 builds:
-  - binary: tokscope
+  - binary: tokscoop
     env:
       - CGO_ENABLED=0
     goos: [darwin, linux, windows]
@@ -26,11 +26,11 @@ checksum:
 changelog:
   use: github
 
-# macOS: brew install --cask cobayo/tap/tokscope
+# macOS: brew install --cask cobayo/tap/tokscoop
 # (brews: は v2.10 で非推奨になったため homebrew_casks を使います)
 homebrew_casks:
-  - name: tokscope
-    binaries: [tokscope]
+  - name: tokscoop
+    binaries: [tokscoop]
     homepage: https://github.com/cobayo/tokscoop
     description: Local proxy that records token usage of Claude Code, Codex and other AI CLIs
     repository:
@@ -42,5 +42,5 @@ homebrew_casks:
         # 署名・公証していないバイナリのため quarantine 属性を外す
         install: |
           if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/tokscope"]
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/tokscoop"]
           end

@@ -22,7 +22,7 @@ func newUI(p *Proxy) http.Handler {
 		_, _ = w.Write(indexHTML)
 	})
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, map[string]any{"name": "tokscope", "version": version, "ca": p.ca.CertPath})
+		writeJSON(w, map[string]any{"name": "tokscoop", "version": version, "ca": p.ca.CertPath})
 	})
 	mux.HandleFunc("GET /api/recent", func(w http.ResponseWriter, r *http.Request) {
 		recs, today := p.store.Snapshot()

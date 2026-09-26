@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// Config is read from $TOKSCOPE_HOME/config.json (optional).
+// Config is read from $TOKSCOOP_HOME/config.json (optional).
 type Config struct {
 	// Listen is the proxy + dashboard address. Default 127.0.0.1:8899.
 	Listen string `json:"listen"`
@@ -31,7 +31,7 @@ type Config struct {
 }
 
 func homeDir() string {
-	if d := os.Getenv("TOKSCOPE_HOME"); d != "" {
+	if d := os.Getenv("TOKSCOOP_HOME"); d != "" {
 		return d
 	}
 	h, err := os.UserHomeDir()
@@ -52,7 +52,7 @@ func loadConfig() (*Config, error) {
 	case !errors.Is(err, fs.ErrNotExist):
 		return nil, err
 	}
-	if v := os.Getenv("TOKSCOPE_LISTEN"); v != "" {
+	if v := os.Getenv("TOKSCOOP_LISTEN"); v != "" {
 		cfg.Listen = v
 	}
 	if cfg.Listen == "" {

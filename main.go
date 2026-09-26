@@ -10,20 +10,20 @@ import (
 
 var version = "dev"
 
-const usageText = `tokscope — AI コーディングツールのトークン消費を記録するローカルプロキシ
+const usageText = `tokscoop — AI コーディングツールのトークン消費を記録するローカルプロキシ
 
 使い方:
-  tokscope run -- <command> [args...]    プロキシ経由でコマンドを起動します（例: tokscope run -- claude）
-  tokscope serve [--listen addr]         プロキシとダッシュボードを常駐させます
-  tokscope adhocrun [--listen addr]      serve と同じ（別ターミナルでツールを起動）
-  tokscope tail [-n 10] [--json]         最新の記録をターミナルに表示します
-  tokscope env [--shell sh|fish|powershell|cmd] [--listen addr]
+  tokscoop run -- <command> [args...]    プロキシ経由でコマンドを起動します（例: tokscoop run -- claude）
+  tokscoop serve [--listen addr]         プロキシとダッシュボードを常駐させます
+  tokscoop adhocrun [--listen addr]      serve と同じ（別ターミナルでツールを起動）
+  tokscoop tail [-n 10] [--json]         最新の記録をターミナルに表示します
+  tokscoop env [--shell sh|fish|powershell|cmd] [--listen addr]
                                          serve と組み合わせて使う環境変数を出力します
-  tokscope ca [--path]                   CA 証明書の場所と、OS に登録する方法を表示します
-  tokscope version
+  tokscoop ca [--path]                   CA 証明書の場所と、OS に登録する方法を表示します
+  tokscoop version
 
 ダッシュボード: http://127.0.0.1:8899/ （run または serve の実行中）
-データの保存先: %s （TOKSCOPE_HOME で変更できます）
+データの保存先: %s （TOKSCOOP_HOME で変更できます）
 `
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 	case "ca":
 		code = cmdCA(os.Args[2:])
 	case "version", "--version", "-v":
-		fmt.Println("tokscope", version)
+		fmt.Println("tokscoop", version)
 	case "help", "--help", "-h":
 		fmt.Printf(usageText, homeDir())
 	default:

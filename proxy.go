@@ -47,7 +47,7 @@ func newProxy(cfg *Config, ca *CA, store *Store, logger *log.Logger) (*Proxy, er
 
 	up := cfg.UpstreamProxy
 	if up == "" {
-		up = os.Getenv("TOKSCOPE_UPSTREAM_PROXY")
+		up = os.Getenv("TOKSCOOP_UPSTREAM_PROXY")
 	}
 	if up != "" {
 		u, err := url.Parse(up)
@@ -157,7 +157,7 @@ func (p *Proxy) serveMITM(conn net.Conn, target, provider, userAgent string) {
 			userAgent = userAgent[:256]
 		}
 		p.log.Printf("%s: クライアントとのTLSハンドシェイクに失敗しました (client=%s, user_agent=%q, ca=%s): %v", host, conn.RemoteAddr(), userAgent, p.ca.CertPath, err)
-		p.log.Print("ツールを起動するターミナルで tokscope env の設定を適用し、ツールを再起動してください。Codex は CODEX_CA_CERTIFICATE、Claude Code は NODE_EXTRA_CA_CERTS を確認してください。")
+		p.log.Print("ツールを起動するターミナルで tokscoop env の設定を適用し、ツールを再起動してください。Codex は CODEX_CA_CERTIFICATE、Claude Code は NODE_EXTRA_CA_CERTS を確認してください。")
 		conn.Close()
 		return
 	}

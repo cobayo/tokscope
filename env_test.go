@@ -11,7 +11,7 @@ import (
 )
 
 func TestDefaultStorageDirectory(t *testing.T) {
-	t.Setenv("TOKSCOPE_HOME", "")
+	t.Setenv("TOKSCOOP_HOME", "")
 	home, err := os.UserHomeDir()
 	if err != nil {
 		t.Skip(err)
@@ -20,7 +20,7 @@ func TestDefaultStorageDirectory(t *testing.T) {
 		t.Fatalf("homeDir() = %q, want %q", got, want)
 	}
 	custom := t.TempDir()
-	t.Setenv("TOKSCOPE_HOME", custom)
+	t.Setenv("TOKSCOOP_HOME", custom)
 	if got := homeDir(); got != custom {
 		t.Fatalf("custom homeDir() = %q, want %q", got, custom)
 	}

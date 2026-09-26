@@ -33,7 +33,7 @@ func cmdTail(args []string) int {
 		return 0
 	}
 	if len(recs) == 0 {
-		fmt.Println("まだ記録がありません。tokscope run -- claude のように起動してください。")
+		fmt.Println("まだ記録がありません。tokscoop run -- claude のように起動してください。")
 		return 0
 	}
 	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)

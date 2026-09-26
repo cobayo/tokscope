@@ -1,11 +1,11 @@
-# tokscope
+# tokscoop
 
 A local proxy that sits in front of requests from AI coding tools like Claude Code and Codex,
 recording **input/output token counts, prompts, and system prompts** so you can check them in
 your browser. It's a single Go binary with no external dependencies.
 
 ```
-claude ──HTTPS_PROXY──▶ tokscope (127.0.0.1:8899) ──▶ api.anthropic.com
+claude ──HTTPS_PROXY──▶ tokscoop (127.0.0.1:8899) ──▶ api.anthropic.com
                           │ Decrypts only AI API hosts to read usage
                           │ Everything else (github.com, etc.) passes through untouched
                           ▼
@@ -16,33 +16,33 @@ claude ──HTTPS_PROXY──▶ tokscope (127.0.0.1:8899) ──▶ api.anthro
 
 ```sh
 # macOS
-brew install --cask cobayo/tap/tokscope
+brew install --cask cobayo/tap/tokscoop
 ```
 
 For Linux, Windows, or manual installation, unpack the tar.gz / zip from the
-[Releases page](https://github.com/cobayo/tokscoop/releases) and put the `tokscope`
+[Releases page](https://github.com/cobayo/tokscoop/releases) and put the `tokscoop`
 binary on your PATH, or [build from source](#build-from-source).
 
 ## Quickstart: start the proxy, then use Claude
 
-Start tokscope once, then launch `claude` normally from a shell configured to use the proxy.
+Start tokscoop once, then launch `claude` normally from a shell configured to use the proxy.
 The following commands are for bash / zsh on macOS or Linux. If you built from source and
-haven't added the binary to your PATH, use `./tokscope` instead of `tokscope`.
+haven't added the binary to your PATH, use `./tokscoop` instead of `tokscoop`.
 
 **1. Start the proxy in terminal 1:**
 
 ```sh
-tokscope adhocrun
+tokscoop adhocrun
 ```
 
 Leave this terminal running. `adhocrun` is an alias for `serve`: it runs in the foreground
-and stops when you press Ctrl+C. If tokscope is already running on port 8899, use that
+and stops when you press Ctrl+C. If tokscoop is already running on port 8899, use that
 instance and continue with step 2.
 
 **2. Configure terminal 2 and launch Claude:**
 
 ```sh
-eval "$(tokscope env --shell sh)"
+eval "$(tokscoop env --shell sh)"
 claude
 ```
 
@@ -56,21 +56,21 @@ processes must be restarted. Existing CA bundles are preserved.
 **3. Send a prompt, then check the dashboard:**
 
 Open **http://127.0.0.1:8899/** to see the latest 30 requests after they finish.
-You can also run `tokscope tail` in another terminal. Records are saved in
+You can also run `tokscoop tail` in another terminal. Records are saved in
 `~/.tokscoop/logs/usage.jsonl`.
 
-When finished, exit Claude and stop tokscope with Ctrl+C in terminal 1. Close terminal 2
+When finished, exit Claude and stop tokscoop with Ctrl+C in terminal 1. Close terminal 2
 to discard its environment settings, or restore your previous proxy and CA settings before
 continuing to use it.
 
 ### Generate shell settings
 
-With `tokscope adhocrun` running in terminal 1, apply the proxy and certificate
+With `tokscoop adhocrun` running in terminal 1, apply the proxy and certificate
 settings in terminal 2, then launch your tool:
 
 ```sh
 # bash / zsh
-eval "$(tokscope env --shell sh)"
+eval "$(tokscoop env --shell sh)"
 claude
 ```
 
@@ -82,35 +82,35 @@ For other shells:
 
 ```fish
 # fish
-tokscope env --shell fish | source
+tokscoop env --shell fish | source
 ```
 
 ```powershell
 # PowerShell
-tokscope env --shell powershell | Invoke-Expression
+tokscoop env --shell powershell | Invoke-Expression
 ```
 
-`tokscope env` includes settings for Claude Code and Codex and preserves
+`tokscoop env` includes settings for Claude Code and Codex and preserves
 existing CA bundles. It prints shell commands; it does not start the proxy.
 For example, after applying these settings you can launch `codex` directly
 instead of `claude`. See [Coverage](#coverage) for verification status and limitations.
 
-If you use a custom `TOKSCOPE_HOME`, set it in both terminals. If you start the proxy with
-`tokscope adhocrun --listen 127.0.0.1:18899`, change the manual proxy URL to that port,
-or use `tokscope env --listen 127.0.0.1:18899`. The startup command includes this
+If you use a custom `TOKSCOOP_HOME`, set it in both terminals. If you start the proxy with
+`tokscoop adhocrun --listen 127.0.0.1:18899`, change the manual proxy URL to that port,
+or use `tokscoop env --listen 127.0.0.1:18899`. The startup command includes this
 option automatically when the server is started with `--listen`.
 
 ### Alternative: configure one command only
 
-Use `run` if you prefer tokscope to configure and launch a single tool:
+Use `run` if you prefer tokscoop to configure and launch a single tool:
 
 ```sh
-tokscope run -- claude
-tokscope run -- codex
+tokscoop run -- claude
+tokscoop run -- codex
 ```
 
 `run` passes proxy and certificate variables **only to the command it launches**.
-If tokscope is already running, it uses that instance; otherwise it starts a temporary
+If tokscoop is already running, it uses that instance; otherwise it starts a temporary
 proxy that stops when the tool exits. It does not change your shell configuration or
 OS certificate store.
 
@@ -121,11 +121,11 @@ Building from source requires Go 1.22+. There are no external dependencies.
 ```sh
 git clone https://github.com/cobayo/tokscoop.git
 cd tokscoop
-go build -o tokscope .
-./tokscope adhocrun
+go build -o tokscoop .
+./tokscoop adhocrun
 ```
 
-Put the resulting `tokscope` binary on your PATH, or keep using `./tokscope` from the
+Put the resulting `tokscoop` binary on your PATH, or keep using `./tokscoop` from the
 repository directory in the commands above.
 
 ## What gets recorded
@@ -146,17 +146,17 @@ One line is appended to `~/.tokscoop/logs/usage.jsonl` per request.
 | `status` / `error` / `duration_ms` | HTTP status, any interruption/error, and how long it took |
 
 Agentic tools send dozens of requests per instruction, resending the entire conversation each
-time. Instead of the whole history, tokscope keeps only the latest human message in `prompt`, and
+time. Instead of the whole history, tokscoop keeps only the latest human message in `prompt`, and
 marks continuation requests (following a tool result) with `tool_result`. Text that tools inject
 automatically, like `<system-reminder>` or `<environment_context>`, is not treated as a prompt.
 
-Since providers differ on whether cached tokens count toward input, tokscope always normalizes so
+Since providers differ on whether cached tokens count toward input, tokscoop always normalizes so
 that `total_input_tokens = input_tokens + cache_read_tokens + cache_write_tokens`.
 
 ### System prompts
 
 Claude Code sends a system prompt that's tens of thousands of characters long on every request, so
-instead of writing it into the log directly, tokscope hashes the content into an ID and stores it
+instead of writing it into the log directly, tokscoop hashes the content into an ID and stores it
 once at `~/.tokscoop/system-prompts/<ID>.txt`. You can follow it from the log's
 `system_prompt_id`, or read it by expanding a row on the dashboard and clicking "Show full text".
 Whenever the ID changes, the system prompt changed.
@@ -180,7 +180,7 @@ jq -s 'group_by(.model) | map({model: .[0].model, output: (map(.output_tokens) |
 
 ## Coverage
 
-tokscope only inspects traffic to the hosts below; everything else passes through undecrypted.
+tokscoop only inspects traffic to the hosts below; everything else passes through undecrypted.
 
 | Path | Host | Format | Verified |
 |---|---|---|---|
@@ -196,11 +196,11 @@ Verification notes:
   and transport used for that check were not recorded, so the route-specific entries above
   retain their mock-test status. This does not establish coverage of every Codex mode.
   If records are missing, check the terminal running `adhocrun` / `serve`, or
-  `~/.tokscoop/logs/tokscoop.log` when using `run`. tokscope supplies a bundle of system
-  certificates plus its own CA through `env` / `run` (on Windows, only tokscope's CA
+  `~/.tokscoop/logs/tokscoop.log` when using `run`. tokscoop supplies a bundle of system
+  certificates plus its own CA through `env` / `run` (on Windows, only tokscoop's CA
   is supplied because system certificates cannot be extracted as a file).
   If the proxy reports a client TLS handshake failure, exit Codex, run
-  `eval "$(tokscope env --shell sh)"` in the terminal where you will launch it, and
+  `eval "$(tokscoop env --shell sh)"` in the terminal where you will launch it, and
   start `codex` again. A manual `NODE_EXTRA_CA_CERTS` export is only for Node-based
   clients and is insufficient for Codex. Check `echo "$CODEX_CA_CERTIFICATE"`
   in that same terminal if the error persists.
@@ -229,26 +229,20 @@ Verification notes:
 | `prompt_max_chars` | Maximum number of characters to save for a prompt |
 | `recent` | Number of records shown on the dashboard (default 30) |
 
-These can also be overridden with the environment variables `TOKSCOPE_HOME` (storage location),
-`TOKSCOPE_LISTEN` (listen address), and `TOKSCOPE_UPSTREAM_PROXY`.
-
-The default storage directory is now `~/.tokscoop`. Existing `~/.tokscope` data is
-not moved automatically. To retain your CA, configuration, and logs, stop the proxy
-and move `~/.tokscope` to `~/.tokscoop` if the new directory does not yet exist, then
-update any certificate paths in your shell settings. Alternatively, keep using
-the old directory by setting `TOKSCOPE_HOME="$HOME/.tokscope"` in both terminals.
+These can also be overridden with the environment variables `TOKSCOOP_HOME` (storage location),
+`TOKSCOOP_LISTEN` (listen address), and `TOKSCOOP_UPSTREAM_PROXY`.
 
 ## About Windows
 
-Download the Windows zip from the Releases page, extract it, and put `tokscope.exe`
-on your PATH. Then run `tokscope adhocrun` in one PowerShell window. In another,
+Download the Windows zip from the Releases page, extract it, and put `tokscoop.exe`
+on your PATH. Then run `tokscoop adhocrun` in one PowerShell window. In another,
 apply the [PowerShell environment settings](#generate-shell-settings) and launch `claude`.
 Certificates are configured through environment variables, so no administrator privileges
 or certificate store registration are needed. For tools used inside
 WSL, install the Linux build inside WSL to record them.
 
 Only if you need to record tools that don't read environment variables, register the CA with your
-OS by following the instructions from `tokscope ca`.
+OS by following the instructions from `tokscoop ca`.
 
 ## Security
 
@@ -261,7 +255,7 @@ OS by following the instructions from `tokscope ca`.
 - Commands run by the tool (`npm install`, `git`, etc.) also inherit the proxy environment
   variables. Traffic to anything other than the AI APIs passes through undecrypted, so this has no
   effect — but calling something like `curl https://api.anthropic.com/...` directly from a command
-  will hit a certificate error, since it doesn't know tokscope's CA.
+  will hit a certificate error, since it doesn't know tokscoop's CA.
 
 ## Limitations
 
@@ -271,13 +265,13 @@ OS by following the instructions from `tokscope ca`.
 - When streaming Chat Completions with LiteLLM, token counts won't come back
   ("no usage data") unless the client sets `stream_options.include_usage`.
 - Logs are not rotated. Move or delete `usage.jsonl` once it gets large.
-- Only HTTP/1.1 is used between tokscope and the client (HTTP/2 is only used upstream).
+- Only HTTP/1.1 is used between tokscoop and the client (HTTP/2 is only used upstream).
 
 ## Development
 
 ```sh
 go test -race ./...
-go build -o tokscope .
+go build -o tokscoop .
 ```
 
 Pushing a tag like `v0.1.0` triggers GitHub Actions to build with GoReleaser and update the
@@ -292,11 +286,10 @@ Homebrew tap. Set these up beforehand:
    `HOMEBREW_TAP_GITHUB_TOKEN`. Renew the token before it expires.
    `GITHUB_TOKEN` is provided automatically by GitHub Actions.
 4. Push an unused version tag, then confirm the `release` workflow succeeds and
-   `Casks/tokscope.rb` appears in the tap repository.
+   `Casks/tokscoop.rb` appears in the tap repository.
 
 The source repository and release assets must be public for installation without
-authentication. The repository is named `tokscoop`; the distributed binary and
-Homebrew cask are named `tokscope`.
+authentication. The repository, distributed binary, and Homebrew cask are named `tokscoop`.
 
 | File | Role |
 |---|---|

@@ -22,7 +22,7 @@ func cmdRun(args []string) int {
 		args = args[1:]
 	}
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "使い方: tokscope run -- <command> [args...]（例: tokscope run -- claude）")
+		fmt.Fprintln(os.Stderr, "使い方: tokscoop run -- <command> [args...]（例: tokscoop run -- claude）")
 		return 2
 	}
 	cfg, err := loadConfig()
@@ -39,7 +39,7 @@ func cmdRun(args []string) int {
 			return 1
 		}
 		caPath = ca.CertPath
-		fmt.Fprintf(os.Stderr, "tokscoop: 起動中の tokscope に記録します → http://%s/\n", cfg.Listen)
+		fmt.Fprintf(os.Stderr, "tokscoop: 起動中の tokscoop に記録します → http://%s/\n", cfg.Listen)
 	} else {
 		p, err := setup(cfg, fileLogger())
 		if err != nil {
@@ -48,7 +48,7 @@ func cmdRun(args []string) int {
 		}
 		ln, err := net.Listen("tcp", cfg.Listen)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "tokscoop: %s で待ち受けできません: %v\n（ポートを変えるには TOKSCOPE_LISTEN=127.0.0.1:18899 のように指定してください）\n", cfg.Listen, err)
+			fmt.Fprintf(os.Stderr, "tokscoop: %s で待ち受けできません: %v\n（ポートを変えるには TOKSCOOP_LISTEN=127.0.0.1:18899 のように指定してください）\n", cfg.Listen, err)
 			return 1
 		}
 		srv := newServer(p)
@@ -59,7 +59,7 @@ func cmdRun(args []string) int {
 	}
 
 	if cur := firstEnv("HTTPS_PROXY", "https_proxy"); cur != "" && !pointsTo(cur, cfg.Listen) &&
-		cfg.UpstreamProxy == "" && os.Getenv("TOKSCOPE_UPSTREAM_PROXY") == "" {
+		cfg.UpstreamProxy == "" && os.Getenv("TOKSCOOP_UPSTREAM_PROXY") == "" {
 		fmt.Fprintf(os.Stderr, "tokscoop: 既存の HTTPS_PROXY（%s）を上書きします。社内プロキシが必要な場合は config.json の upstream_proxy に設定してください。\n", cur)
 	}
 
@@ -103,8 +103,8 @@ func cmdRun(args []string) int {
 
 type envVar struct{ Key, Value string }
 
-// proxyEnv returns the variables that route a tool through tokscope and make
-// it trust tokscope's CA. They are given to the child process only.
+// proxyEnv returns the variables that route a tool through tokscoop and make
+// it trust tokscoop's CA. They are given to the child process only.
 func proxyEnv(cfg *Config, caPath string) ([]envVar, error) {
 	proxyURL := "http://" + cfg.Listen
 	vars := []envVar{{"HTTPS_PROXY", proxyURL}, {"HTTP_PROXY", proxyURL}}
@@ -149,7 +149,7 @@ func proxyEnv(cfg *Config, caPath string) ([]envVar, error) {
 }
 
 // bundle returns a PEM file containing base (or, if includeSystem and base
-// is empty, the system roots) plus tokscope's CA.
+// is empty, the system roots) plus tokscoop's CA.
 func bundle(caPath, base string, includeSystem bool, outName string) (string, error) {
 	caPEM, err := os.ReadFile(caPath)
 	if err != nil {
@@ -321,7 +321,7 @@ func cmdEnv(args []string) int {
 	}
 	writeEnv(os.Stdout, *shell, vars)
 	if !running(cfg.Listen) {
-		fmt.Fprintln(os.Stderr, "tokscoop: まだプロキシが動いていません。先に tokscope serve を起動してください。")
+		fmt.Fprintln(os.Stderr, "tokscoop: まだプロキシが動いていません。先に tokscoop serve を起動してください。")
 	}
 	return 0
 }
@@ -343,15 +343,15 @@ func writeEnv(w io.Writer, shell string, vars []envVar) {
 
 const caHelp = `CA 証明書: %s
 
-tokscope run で起動したツールには、環境変数（NODE_EXTRA_CA_CERTS / CODEX_CA_CERTIFICATE）で
+tokscoop run で起動したツールには、環境変数（NODE_EXTRA_CA_CERTS / CODEX_CA_CERTIFICATE）で
 この証明書を渡すので、OS への登録は不要です。
 
 環境変数を読まないツールも記録したい場合だけ、次のように OS に登録してください。
-登録すると、このマシン上では tokscope が対象ホストの通信を復号できるようになります。
+登録すると、このマシン上では tokscoop が対象ホストの通信を復号できるようになります。
 
   macOS:   security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db "%s"
   Windows: certutil -user -addstore Root "%s"
-  Linux:   sudo cp "%s" /usr/local/share/ca-certificates/tokscope.crt && sudo update-ca-certificates
+  Linux:   sudo cp "%s" /usr/local/share/ca-certificates/tokscoop.crt && sudo update-ca-certificates
 
 秘密鍵（%s）は共有しないでください。消すと次回起動時に作り直されます。
 `

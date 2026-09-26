@@ -32,7 +32,7 @@ type testEnv struct {
 // requests for api.anthropic.com etc. reach the mock.
 func newTestProxy(t *testing.T, upstream *httptest.Server) *testEnv {
 	t.Helper()
-	t.Setenv("TOKSCOPE_HOME", t.TempDir())
+	t.Setenv("TOKSCOOP_HOME", t.TempDir())
 	cfg, err := loadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -157,7 +157,7 @@ func TestProxyTunnelsOtherHosts(t *testing.T) {
 	env := newTestProxy(t, up)
 
 	// example.com is not an AI API: the client must talk TLS to the real
-	// server (here: the mock, whose cert covers example.com), not to tokscope.
+	// server (here: the mock, whose cert covers example.com), not to tokscoop.
 	resp, err := env.client.Post("https://example.com/v1/messages", "application/json", strings.NewReader(`{}`))
 	if err != nil {
 		t.Fatal(err)
@@ -319,7 +319,7 @@ func TestProxyResponsesWebSocket(t *testing.T) {
 	}
 	tc := tls.Client(&bufferedConn{Conn: conn, r: br}, &tls.Config{RootCAs: env.pool, ServerName: "chatgpt.com", NextProtos: []string{"http/1.1"}})
 	if err := tc.Handshake(); err != nil {
-		t.Fatalf("TLS to tokscope: %v", err)
+		t.Fatalf("TLS to tokscoop: %v", err)
 	}
 	fmt.Fprintf(tc, "GET /backend-api/codex/responses HTTP/1.1\r\nHost: chatgpt.com\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
 		"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Extensions: permessage-deflate\r\n"+
@@ -383,7 +383,7 @@ func TestDashboardAPI(t *testing.T) {
 	if rr := get("attacker.example:8899", "/api/recent"); rr.Code != http.StatusForbidden {
 		t.Fatalf("foreign Host must be rejected, got %d", rr.Code)
 	}
-	if rr := get("127.0.0.1:8899", "/"); !strings.Contains(rr.Body.String(), "tokscope") {
+	if rr := get("127.0.0.1:8899", "/"); !strings.Contains(rr.Body.String(), "tokscoop") {
 		t.Fatalf("index not served")
 	}
 }

@@ -20,7 +20,7 @@ import (
 )
 
 // CA is a local certificate authority used only to terminate TLS for the
-// AI API hosts that tokscope inspects. Everything else is tunnelled as-is.
+// AI API hosts that tokscoop inspects. Everything else is tunnelled as-is.
 type CA struct {
 	CertPath string
 	cert     *x509.Certificate
@@ -100,7 +100,7 @@ func generateCA() (certPEM, keyPEM []byte, err error) {
 	host, _ := os.Hostname()
 	tmpl := &x509.Certificate{
 		SerialNumber:          serial,
-		Subject:               pkix.Name{CommonName: "tokscope local CA (" + host + ")", Organization: []string{"tokscope"}},
+		Subject:               pkix.Name{CommonName: "tokscoop local CA (" + host + ")", Organization: []string{"tokscoop"}},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().AddDate(10, 0, 0),
 		IsCA:                  true,
