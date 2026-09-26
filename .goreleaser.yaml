@@ -1,10 +1,10 @@
 # GoReleaser v2. `git tag v0.1.0 && git push --tags` でリリースされます。
-# cobayo は自分の GitHub ユーザー名に置き換えてください。
 version: 2
 project_name: tokscope
 
 builds:
-  - env:
+  - binary: tokscope
+    env:
       - CGO_ENABLED=0
     goos: [darwin, linux, windows]
     goarch: [amd64, arm64]
@@ -26,12 +26,12 @@ checksum:
 changelog:
   use: github
 
-# macOS: brew install cobayo/tap/tokscope
+# macOS: brew install --cask cobayo/tap/tokscope
 # (brews: は v2.10 で非推奨になったため homebrew_casks を使います)
 homebrew_casks:
   - name: tokscope
     binaries: [tokscope]
-    homepage: https://github.com/cobayo/tokscope
+    homepage: https://github.com/cobayo/tokscoop
     description: Local proxy that records token usage of Claude Code, Codex and other AI CLIs
     repository:
       owner: cobayo
@@ -44,14 +44,3 @@ homebrew_casks:
           if OS.mac?
             system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/tokscope"]
           end
-
-# Windows: scoop bucket add tokscope https://github.com/cobayo/scoop-bucket
-#          scoop install tokscope
-scoops:
-  - name: tokscope
-    homepage: https://github.com/cobayo/tokscope
-    description: Local proxy that records token usage of Claude Code, Codex and other AI CLIs
-    repository:
-      owner: cobayo
-      name: scoop-bucket
-      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"

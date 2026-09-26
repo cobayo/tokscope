@@ -17,16 +17,11 @@ claude ──HTTPS_PROXY──▶ tokscope (127.0.0.1:8899) ──▶ api.anthro
 ```sh
 # macOS
 brew install --cask cobayo/tap/tokscope
-
-# Windows (PowerShell)
-scoop bucket add tokscope https://github.com/cobayo/scoop-bucket
-scoop install tokscope
-
-# Linux / other (Go 1.22+)
-go install github.com/cobayo/tokscope@latest
 ```
 
-You can also unpack the tar.gz / zip from the Releases page and put it on your PATH.
+For Linux, Windows, or manual installation, unpack the tar.gz / zip from the
+[Releases page](https://github.com/cobayo/tokscoop/releases) and put the `tokscope`
+binary on your PATH, or [build from source](#build-from-source).
 
 ## Quickstart: start the proxy, then use Claude
 
@@ -122,8 +117,8 @@ OS certificate store.
 Building from source requires Go 1.22+. There are no external dependencies.
 
 ```sh
-git clone https://github.com/cobayo/tokscope.git
-cd tokscope
+git clone https://github.com/cobayo/tokscoop.git
+cd tokscoop
 go build -o tokscope .
 ./tokscope adhocrun
 ```
@@ -240,7 +235,8 @@ These can also be overridden with the environment variables `TOKSCOPE_HOME` (sto
 
 ## About Windows
 
-Install with Scoop, then run `tokscope adhocrun` in one PowerShell window. In another,
+Download the Windows zip from the Releases page, extract it, and put `tokscope.exe`
+on your PATH. Then run `tokscope adhocrun` in one PowerShell window. In another,
 apply the [PowerShell environment settings](#generate-shell-settings) and launch `claude`.
 Certificates are configured through environment variables, so no administrator privileges
 or certificate store registration are needed. For tools used inside
@@ -280,11 +276,22 @@ go build -o tokscope .
 ```
 
 Pushing a tag like `v0.1.0` triggers GitHub Actions to build with GoReleaser and update the
-Homebrew tap and Scoop bucket. Set these up beforehand:
+Homebrew tap. Set these up beforehand:
 
-1. Create empty `homebrew-tap` and `scoop-bucket` repositories
-2. Register tokens that can push to them as the `HOMEBREW_TAP_GITHUB_TOKEN` and
-   `SCOOP_BUCKET_GITHUB_TOKEN` secrets
+1. Create the public `cobayo/homebrew-tap` repository, initialized with a README.
+2. Create a fine-grained GitHub personal access token with access only to
+   `homebrew-tap` and repository permission **Contents: Read and write**.
+   The tap must allow this token's owner to update its default branch directly.
+3. In the source repository (`cobayo/tokscoop`), add the token under
+   **Settings → Secrets and variables → Actions** as the repository secret
+   `HOMEBREW_TAP_GITHUB_TOKEN`. Renew the token before it expires.
+   `GITHUB_TOKEN` is provided automatically by GitHub Actions.
+4. Push an unused version tag, then confirm the `release` workflow succeeds and
+   `Casks/tokscope.rb` appears in the tap repository.
+
+The source repository and release assets must be public for installation without
+authentication. The repository is named `tokscoop`; the distributed binary and
+Homebrew cask are named `tokscope`.
 
 | File | Role |
 |---|---|
